@@ -6,9 +6,28 @@ export class Home extends Component {
   constructor(props) {
     super(props);
     this.state = { place: 'Amsterdam', garden: false, makelaars: [], loading: false };
+    this.handleErrors = this.handleErrors.bind(this);
     this.getTopMakelaars = this.getTopMakelaars.bind(this);
     this.updatePlace = this.updatePlace.bind(this);
     this.updateGarden = this.updateGarden.bind(this);
+  }
+
+  handleErrors(response) {
+    if (!response.ok) {
+      if (response.status === 400) {
+        this.setState({
+          message: 'An error occurred. Please contact support for assistance.'
+        });
+      }
+    } else {
+      this.setState({ message: '' });
+    }
+
+    this.setState({
+      orderStatus: response.status
+    });
+
+    return response;
   }
 
   updatePlace(e) {
@@ -51,6 +70,7 @@ export class Home extends Component {
           <span style={{ paddingLeft: 10, paddingRight: 10 }}><strong>Garden:</strong></span><input type='checkbox' checked={this.state.garden} onChange={this.updateGarden} />
         </p>
         <p><button className='btn btn-primary' onClick={this.getTopMakelaars}>{showTopMakelaars}</button></p>
+        <p style={{ color: 'red' }}>{this.state.message}</p>
         <h1 id="tabelLabel">Top Makelaars</h1>
         {contents}
       </div>
@@ -58,9 +78,13 @@ export class Home extends Component {
   }
 
   async getTopMakelaars() {
-    this.setState({ loading: true });
-    const response = await fetch(`makelaars/gettopten/${this.state.place}/${this.state.garden}`);
-    const data = await response.json();
-    this.setState({ makelaars: data, loading: false });
+    this.setState({ makelaars: [], loading: true });
+    const response = await fetch(`makelaars/gettopten/${this.state.place}/${this.state.garden}`).then(this.handleErrors);
+    this.setState({ loading: false });
+
+    if (this.state.message === '') {
+      const data = await response.json();
+      this.setState({ makelaars: data });
+    }
   }
 }
